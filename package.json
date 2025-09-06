@@ -1,7 +1,22 @@
 {
-  "dependencies": {
-    "@azure/identity": "^4.10.2",
-    "@microsoft/microsoft-graph-client": "^3.0.7",
-    "dotenv": "^17.2.0"
+  "name": "calendar-stuff",
+  "private": true,
+  "scripts": {
+    "dev:b": "npm run dev --workspace backend",
+    "dev:f": "npm run dev --workspace frontend",
+    "dev:lib": "npm run watch --workspace lib",
+    "build:backend": "npm run build --workspace backend",
+    "build:frontend": "npm run build --workspace frontend",
+    "build:lib": "npm run build --workspace lib",
+    "build:all": "npm run build:lib && npm run build:backend && npm run build:frontend"
+  },
+  "workspaces": [
+    "backend",
+    "frontend",
+    "lib"
+  ],
+  "devDependencies": {
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7"
   }
 }
