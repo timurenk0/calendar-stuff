@@ -6,7 +6,9 @@ const Layout = ({ children }: {children: ReactNode}) => {
     <div className='flex h-screen overflow-hidden'>
         <main className='flex-1 overflow-x-hidden overflow-y-auto'>
             <Header />
-            {children}
+            <div className="p-3">
+              {children}
+            </div>
         </main>
     </div>
   )

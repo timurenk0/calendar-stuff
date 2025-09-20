@@ -22,7 +22,7 @@ const Header = () => {
             {isAuthenticated ? (
                 <div>
                     <a className="underline mx-2" href="/calendar">Calendar</a>
-                    <a className="underline mx-2" href="/comparator">Comparator</a>
+                    <a className="underline mx-2" href="/comparator">Arranger</a>
                 </div>
             ): (
                 <>

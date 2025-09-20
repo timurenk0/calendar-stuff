@@ -5,7 +5,7 @@ import { LocalCalendar } from "../../lib/dist/teamup-lib";
 
 
 const jsonRouter = Router();
-const calendar = new LocalCalendar();
+const calendar = new LocalCalendar("C:\\Users\\timur.zheltenkov\\Documents\\calendar-stuff\\calendar-stuff\\json-output");
 
 
 jsonRouter.get("/calendar/:calId/events", async (req, res) => {

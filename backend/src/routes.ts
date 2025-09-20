@@ -85,18 +85,34 @@ router.get("/calendar/:calId/events/:id", authorize, async (req, res) => {
     const calendarId = req.params.calId;
     const eventId = req.params.id;
     try {
-
+        
         const event = await calendar.getCalendarEvent(calendarId, eventId);
-        const availableTimes = await calendar.findFreeTimeslots(calendarId, eventId);
-
-        console.log(availableTimes);
-
+        const availableTimes = await calendar.findFreeTimeslots(calendarId, "kstoem2e1bvp4nc4j8", {eventId});
+        
         res.send([event, availableTimes]);
     } catch (error) {
         const msg = error instanceof Error ? error.message : "Unkown error";
         res.status(500).json({ error: `Failed to fetch calendar events" ${msg}` });
     }
 });
+
+router.get("/calendar/:calId/schedule-event", authorize, async (req, res) => {
+    const calendarId = req.params.calId;
+    try {
+        const schedule = await calendar.findFreeTimeslots(calendarId, "kstoem2e1bvp4nc4j8", {
+            options: {
+                duration: 3,
+                startDate: "2025-01-01",
+                weekDays: ["Mon", "Tue", "Fri"],
+                startTime: "10:00"
+            }
+        });
+
+        res.send(schedule);
+    } catch (error) {
+        res.status(500).json({ error: `Failed to schedule event: ${error}` });
+    }
+})
 
 router.get("/calendar/:calId/subcalendars", authorize, async (req, res) => {
     const calendarId = req.params.calId;
@@ -128,17 +144,6 @@ router.get("/calendar/:calId/subcalendars/:subCalId", authorize, async (req, res
     }
 })
 
-router.get("/calendar/mazhar/:id", authorize, async (req, res) => {
-    const eventId = req.params.id;
-    try {
-        const response = await calendar.checkMazhar(eventId);
-
-        res.status(response).send(response);
-    } catch (error) {
-        throw new Error("Sosi pencil");
-    }
-})
-
 router.get("/calendar/:calId/save", authorize,  async (req, res) => {
     const calendarId = req.params.calId;
     const startDate = req.query.start || "2024-01-01";
@@ -151,6 +156,7 @@ router.get("/calendar/:calId/save", authorize,  async (req, res) => {
         throw new Error(error.message);
     }
 });
+
 
 
 export default router;

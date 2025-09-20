@@ -20,3 +20,33 @@
   border-radius: 20px;
   height: 5%;
 }
+
+.picker {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 50px;
+}
+.column {
+  height: 120px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  border: 1px solid #ccc;
+  width: 50px;
+  text-align: center;
+}
+.column div {
+  scroll-snap-align: center;
+  padding: 10px 0;
+  font-size: 18px;
+}
+.highlight {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  height: 30px;
+  border: 2px solid #007bff;
+  pointer-events: none;
+}

@@ -202,7 +202,7 @@ const Calendar = () => {
     }
 
   return (
-    <div className="p-3">
+    <>
         {/* Page heading */}
         <h1 className="text-xl font-semibold">Welcome to Calendar Handler!</h1>
         <p className="font-light text-sm">Select option from below to see the API output:</p>
@@ -351,7 +351,7 @@ const Calendar = () => {
                 </tbody>
             </table>
         </div>
-    </div>
+    </>
   )
 }
 

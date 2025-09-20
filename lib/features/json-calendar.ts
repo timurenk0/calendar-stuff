@@ -4,10 +4,14 @@ import { ICalendarEventProp, IFileProp } from "@lib/interfaces";
 
 
 export class LocalCalendar {
-    private DIR_PATH = "C:\\Users\\timur.zheltenkov\\Documents\\calendar-stuff\\calendar-stuff\\json-output";
+    private DIR_PATH: string;
+    // "C:\\Users\\timur.zheltenkov\\Documents\\calendar-stuff\\calendar-stuff\\json-output";
     
-    constructor() {
-        console.log("Local Calendar initialized successfully...");
+    /**
+     * @param DIR_PATH Absolute path to the folder where you want to store JSON calendar files
+     */
+    constructor(DIR_PATH: string) {
+        this.DIR_PATH = DIR_PATH;
     };
 
 
@@ -57,23 +61,23 @@ export class LocalCalendar {
             const contents = await this.readFile(filepath);
             
             // normalizing location namings
-            // contents.events.forEach((ev: any) => {
+            Object.values(contents.events).forEach((ev: any) => {
                 
-            //     if (ev.custom?.campus_room_location) {
-            //         if(/online/i.test(ev.custom.campus_room_location)) {
-            //             ev.custom.campus_room_location = "Online";
-            //         } else if(/potsdam/i.test(ev.custom.campus_room_location) || /^r(o+)m(\s+)[0-9]+$/i.test(ev.custom.campus_room_location)) {
-            //             const parts = ev.custom.campus_room_location?.trim().split(/\s+/);
-            //             ev.custom.campus_room_location = "Room "+parts[parts.length-1];
-            //         }
-            //         }
-            //     }
-            // );
+                if (ev.custom?.campus_room_location) {
+                    if(/online/i.test(ev.custom.campus_room_location)) {
+                        ev.custom.campus_room_location = "Online";
+                    } else if(/potsdam/i.test(ev.custom.campus_room_location) || /^r(o+)m(\s+)[0-9]+$/i.test(ev.custom.campus_room_location)) {
+                        const parts = ev.custom.campus_room_location?.trim().split(/\s+/);
+                        ev.custom.campus_room_location = "Room "+parts[parts.length-1];
+                    }
+                    }
+                }
+            );
 
             await fs.writeFile(filepath, JSON.stringify(contents, null, 2));
             const result = await this.readFile(filepath);
 
-            return result.events;
+            return result;
         } catch (error) {
             const msg = error instanceof Error ? error.message : "Unknown error";
             throw new Error(`Failed to fetch events: ${msg}`);

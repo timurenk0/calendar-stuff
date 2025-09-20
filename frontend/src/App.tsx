@@ -2,7 +2,7 @@ import { Switch, Route } from "wouter";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
-import Comparator from "./pages/Comparator";
+import Arranger from "./pages/Arranger";
 import { useEffect, useState } from "react";
 import { AuthProvider } from "./utils/auth-middleware";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +39,7 @@ function Router() {
             <Switch>
                 <Route path="/" component={Dashboard} />
                 <Route path="/calendar" component={Calendar} />
-                <Route path="/comparator" component={Comparator} />
+                <Route path="/comparator" component={Arranger} />
             </Switch>
         </Layout>
     )

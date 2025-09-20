@@ -18,5 +18,8 @@
   "devDependencies": {
     "fs": "^0.0.1-security",
     "path": "^0.12.7"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0"
   }
 }

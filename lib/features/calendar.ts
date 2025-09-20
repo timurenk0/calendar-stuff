@@ -1,13 +1,20 @@
 import { AuthManager } from "../authentication/auth.js";
 import { IAuthToken, ICalendarEventProp } from "../interfaces.js";
-import { DateFormatter } from "../utils/date-converter.js";
 import path from "path";
 import { promises as fs } from "fs";
 import apiFetch from "../utils/fetcher.js";
+import { format } from "date-fns";
+
+
+type findFreeTimeslotsProps = {
+    eventId: string; options?: null
+} | {
+    eventId?: null; options: { duration: number, startDate: string, startTime?: string, endTime?: string, weekDays?: string[] }
+}
+
 
 export class CalendarManager {
     private authBearerToken: IAuthToken;
-    private df = new DateFormatter();
     
     constructor(auth: AuthManager) {
         this.authBearerToken = auth.getAuthHeader();
@@ -58,17 +65,6 @@ export class CalendarManager {
         }
     }
     
-    async checkMazhar(eventId: string) {
-        try {
-            const response = await apiFetch(`https://api.teamup.com/ksh61p2d97npottv3o/events/${eventId}`, this.authBearerToken)
-
-            return response.status;
-        } catch (error) {
-            const msg = error instanceof Error ? error.message : "Unkown error";
-            throw new Error(`Failed to check Mazhar: ${msg}`)
-        }
-    }
-
     /**
      * Retrieves configuration details for the specified calendar.
      * @param calendarId TeamUp calendar ID
@@ -169,13 +165,13 @@ export class CalendarManager {
         try {
             const response = await apiFetch(`https://api.teamup.com/${calendarId}/events/${eventId}`, this.authBearerToken)
             
-            return response.events;
+            return response.event;
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Unknown message";
             throw new Error(`Failed to fetch calendar event: ${msg}`);
         }
     }
-
+    
     /**
      * Finds available timeslots within 90 days for scheduling an event of the same duration as the given event.
      * Working hours are limited between 8:00–20:00.
@@ -183,18 +179,29 @@ export class CalendarManager {
      * @param eventId Event identifier
      * @returns Event duration in hours and list of available times
      */
-    async findFreeTimeslots(calendarId: string, eventId: string) {
+    async findFreeTimeslots(profCalendarId: string, studentCalendarId: string, params: findFreeTimeslotsProps) {
         try {
             // Get selected event
-            const event = await this.getCalendarEvent(calendarId, eventId);
-            if (!event) throw new Error("Event not found");
+            let eventStart: Date;
+            let eventEnd: Date;
+            let eventDurationHours: number;
+            
+            if (params.eventId) {
+                const event = await this.getCalendarEvent(profCalendarId, params.eventId);
+                if (!event) throw new Error("Event not found");
+                eventStart = new Date(event.start_dt);
+                eventEnd = new Date(event.end_dt);
+                eventDurationHours = (eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60);
+            } else if (params.options) {
+                eventStart = new Date(params.options.startDate);
+                eventDurationHours = params.options.duration;
+            } else {
+                throw new Error("Either eventId or options must be passed as params")
+            }
 
 
-            const eventStart = new Date(event.start_dt);
-            const eventEnd = new Date(event.end_dt);
-            const eventDurationHours = (eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60);
 
-            // Get 90 days range starting from the event's date
+            // Get 90 days range starting from the specified event's start date
             const startDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
             const endDate = new Date(startDate);
             endDate.setDate(endDate.getDate() + 90);
@@ -202,29 +209,26 @@ export class CalendarManager {
             
             // Fetch all events in the given period (90 days)
             // Custom formatLocalDate to ignore the timezone conversions
-            const allEvents = await this.getCalendarEvents(
-                calendarId,
-                this.df.formatLocalDate(startDate),
-                this.df.formatLocalDate(endDate)
+            const profEvents = await this.getCalendarEvents(
+                profCalendarId,
+                format(startDate, "yyyy-MM-dd"),
+                format(endDate, "yyyy-MM-dd"),
             );
-
-            console.log("allEvents:", allEvents);
             
-            let mazharEvents: ICalendarEventProp[] = [];
-            if (await this.checkMazhar(eventId) === 200) {
-                const mazharData = await this.getCalendarEvents("ksh61p2d97npottv3o", this.df.formatLocalDate(startDate), this.df.formatLocalDate(endDate));
-                if (!mazharData) throw new Error("Failed to fetch Mazhar events");
-                mazharEvents = mazharData;
-            }
+            let studentEvents: ICalendarEventProp[] = await this.getCalendarEvents(
+                studentCalendarId,
+                format(startDate, "yyyy-MM-dd"),
+                format(endDate, "yyyy-MM-dd"),
+            );
             
             // Convert events to time ranges
-            const events = [...allEvents, ...mazharEvents]
-                .map((e: any) => ({
+            const events = [...profEvents, ...studentEvents]
+                .map(e => ({
                     start: new Date(e.start_dt),
                     end: new Date(e.end_dt)
                 }))
 
-            const availableTimes: { start: string; end: string }[] = [];
+            let availableTimes: { start: string; end: string }[] = [];
 
             let current = new Date(startDate);
 
@@ -236,7 +240,7 @@ export class CalendarManager {
                 dayEnd.setHours(20, 0, 0, 0);
 
                 // Get events for this day within working hours
-                const dayEvents = events.filter((e: any) => e.start < dayEnd && e.end > dayStart);
+                const dayEvents = events.filter(e => e.start < dayEnd && e.end > dayStart);
 
                 let lastEnd = new Date(dayStart);
 
@@ -248,8 +252,8 @@ export class CalendarManager {
                     const gapHours = (startBound.getTime() - lastEnd.getTime()) / (1000 * 60 * 60);
                     if (gapHours >= eventDurationHours) {
                         availableTimes.push({
-                            start: this.df.formatLocalDateTime(lastEnd),
-                            end: this.df.formatLocalDateTime(startBound)
+                            start: format(lastEnd, "yyyy-MM-dd HH:mm:SS"),
+                            end: format(startBound, "yyyy-MM-dd HH:mm:SS"),
                         });
                     }
                     if (endBound > lastEnd) {
@@ -261,19 +265,45 @@ export class CalendarManager {
                 const finalGapHours = (dayEnd.getTime() - lastEnd.getTime()) / (1000 * 60 * 60);
                 if (finalGapHours >= eventDurationHours) {
                     availableTimes.push({
-                        start: this.df.formatLocalDateTime(lastEnd),
-                        end: this.df.formatLocalDateTime(dayEnd)
+                        start: format(lastEnd, "yyyy-MM-dd HH:mm:SS"),
+                        end: format(dayEnd, "yyyy-MM-dd HH:mm:SS")
                     });
                 }
 
                 // Move to next day
                 current.setDate(current.getDate() + 1);
             }
+            
+            // Check if paramaters are passed and apply them
+            if (params.options) {
+                let startTime = params.options.startTime ?? "08:00";
+                let endTime = params.options.endTime ?? "20:00";
+                let weekDays = params.options.weekDays ?? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+                availableTimes = availableTimes.filter(at => weekDays.includes(format(new Date(at.start), "EEE")))
+                .filter(at => {
+                    const [startHour, startMinute] = startTime.split(":").map(Number);
+                    const [endHour, endMinute] = endTime.split(":").map(Number);
 
-            return {eventDurationHours, availableTimes};
+                    const slotStart = new Date(at.start);
+                    const slotEnd = new Date(at.end);
+
+                    const startDate = new Date(slotStart);
+                    const endDate = new Date(slotEnd);
+
+                    startDate.setHours(startHour, startMinute);
+                    endDate.setHours(endHour, endMinute);
+
+                    return slotStart >= startDate && slotEnd <= endDate;
+                });
+            };
+
+            const totalTimeslots = availableTimes.length;
+            
+            return {eventDurationHours, totalTimeslots, availableTimes};
         } catch (error) {
             console.error("Error finding free time weekly:", error);
             return [];
         }
     }
+
 }
