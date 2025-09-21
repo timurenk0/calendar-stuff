@@ -29,14 +29,14 @@ export class CalendarManager {
      * @returns True if saved successfully
      * @throws Error if saving fails
      */
-    async saveCalendar(calendarId: string, start: string, end: string): Promise<boolean> {
+    async saveCalendar(calendarId: string, start: string, end: string, DIR_PATH: string): Promise<boolean> {
         try {
             // Fetch calendar configuration info and events for specified calendar.
             const calendar = await this.getCalendarConfig(calendarId);
             const events = await this.getCalendarEvents(calendarId, start, end);
 
             // Specify the link where all the calendar JSON files will be stored.
-            const LINK = "C:\\Users\\timur.zheltenkov\\Documents\\calendar-stuff\\calendar-stuff\\json-output";
+            const LINK = DIR_PATH;
             
             // Create the output folder if it doesn't exist
             await fs.mkdir(LINK, 
@@ -161,7 +161,7 @@ export class CalendarManager {
      * @param eventId Event identifier
      * @returns Event duration in hours and list of available times
      */
-    async findFreeTimeslots(profCalendarId: string, studentCalendarId: string, params: findFreeTimeslotsProps): Promise<{ eventDurationHours: number, totalTimeslots: number, availableTimes: { start: string, end: string } }> {
+    async findFreeTimeslots(profCalendarId: string, studentCalendarId: string, params: findFreeTimeslotsProps): Promise<{ eventDurationHours: number, totalTimeslots: number, availableTimes: { start: string, end: string }[] }> {
         try {
             // Get selected event
             let eventStart: Date;
@@ -283,8 +283,8 @@ export class CalendarManager {
             
             return {eventDurationHours, totalTimeslots, availableTimes};
         } catch (error) {
-            console.error("Error finding free time weekly:", error);
-            return [];
+            const msg = error instanceof Error ? error.message : "Unknown error";
+            throw new Error (`Error finding free time weekly: ${msg}`);
         }
     }
 

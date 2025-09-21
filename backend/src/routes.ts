@@ -149,7 +149,7 @@ router.get("/calendar/:calId/save", authorize,  async (req, res) => {
     const startDate = req.query.start || "2024-01-01";
     const endDate = req.query.end || "2026-01-01";
     try {
-        const events = await calendar.saveCalendar(calendarId, String(startDate), String(endDate));
+        const events = await calendar.saveCalendar(calendarId, String(startDate), String(endDate), "C:\\output");
 
         res.json({ success: true, savedData: events });        
     } catch (error: any) {
