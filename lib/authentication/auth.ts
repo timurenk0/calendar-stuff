@@ -29,7 +29,7 @@ export class AuthManager {
      * @param api_key TeamUp access token
      * @returns User information object
      */
-    async authenticate() {
+    async authenticate(): Promise<Response> {
         try {
             const response = await fetch("https://api.teamup.com/check-access",{
                 method: "GET",

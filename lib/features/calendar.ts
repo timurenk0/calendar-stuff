@@ -81,24 +81,6 @@ export class CalendarManager {
             throw new Error(`Failed to fetch calendar config: ${msg}`);
         }
     }
-
-    /**
-     * Retrieves all API keys for the specified calendar (requires special permissions).
-     * @param calendarId TeamUp calendar ID
-     * @returns something idfk
-     * @throws Error if request fails
-     */
-    // still dunno wtf it does tbh
-    async getCalendarKeys(calendarId: string) {
-        try {
-            const response = await apiFetch(`https://api.teamup.com/${calendarId}/keys`, this.authBearerToken)
-
-            return response;
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : "Unknown Error";
-            throw new Error(`Failed to fetch calendar keys: ${msg}`);
-        }
-    }
     
     /**
      * Retrieves all subcalendars for the given calendar.
@@ -179,7 +161,7 @@ export class CalendarManager {
      * @param eventId Event identifier
      * @returns Event duration in hours and list of available times
      */
-    async findFreeTimeslots(profCalendarId: string, studentCalendarId: string, params: findFreeTimeslotsProps) {
+    async findFreeTimeslots(profCalendarId: string, studentCalendarId: string, params: findFreeTimeslotsProps): Promise<{ eventDurationHours: number, totalTimeslots: number, availableTimes: { start: string, end: string } }> {
         try {
             // Get selected event
             let eventStart: Date;
